@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DLP Gateway — Scan Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #12161B;
+    --surface: #1B222A;
+    --surface-hi: #232C36;
+    --border: #2A333D;
+    --text: #E7EAEE;
+    --muted: #8D97A3;
+    --amber: #F2B705;
+    --amber-dim: #4A3C10;
+    --safe: #4FAE7C;
+    --danger: #E5584D;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 48px 20px;
+  }
+
+  .console {
+    width: 100%;
+    max-width: 780px;
+  }
+
+  .topline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--safe);
+    box-shadow: 0 0 8px var(--safe);
+  }
+
+  h1 {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 700;
+    margin: 4px 0 8px;
+    letter-spacing: -0.01em;
+  }
+
+  .sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 36px;
+    max-width: 520px;
+    line-height: 1.5;
+  }
+
+  .dropzone {
+    background: var(--surface);
+    border: 1.5px dashed var(--border);
+    border-radius: 10px;
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    position: relative;
+  }
+
+  .dropzone:hover, .dropzone.drag {
+    border-color: var(--amber);
+    background: var(--surface-hi);
+  }
+
+  .dropzone input { display: none; }
+
+  .dz-icon {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--amber);
+    margin-bottom: 10px;
+    letter-spacing: 0.05em;
+  }
+
+  .dz-main {
+    font-size: 15px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .dz-sub {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  .filename-tag {
+    display: inline-block;
+    margin-top: 14px;
+    background: var(--surface-hi);
+    border: 1px solid var(--border);
+    color: var(--amber);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 6px;
+  }
+
+  .actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 18px;
+  }
+
+  button.scan-btn {
+    background: var(--amber);
+    color: #1A1500;
+    border: none;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 12px 22px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: transform 0.1s ease, opacity 0.15s ease;
+  }
+
+  button.scan-btn:hover { transform: translateY(-1px); }
+  button.scan-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .status-line {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 14px;
+    min-height: 16px;
+  }
+
+  .status-line.error { color: var(--danger); }
+
+  .result {
+    margin-top: 30px;
+    display: none;
+  }
+
+  .result.show { display: block; }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .result-title {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 9px;
+    border-radius: 5px;
+    background: rgba(79, 174, 124, 0.12);
+    color: var(--safe);
+    border: 1px solid rgba(79, 174, 124, 0.3);
+  }
+
+  .badge.flagged {
+    background: rgba(229, 88, 77, 0.1);
+    color: var(--danger);
+    border-color: rgba(229, 88, 77, 0.3);
+  }
+
+  .entity-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .entity-chip {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--surface-hi);
+    border: 1px solid var(--border);
+    color: var(--amber);
+    padding: 5px 9px;
+    border-radius: 5px;
+  }
+
+  .text-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px;
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.9;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .redacted {
+    background: #1A1500;
+    color: var(--amber);
+    padding: 1px 6px;
+    border-radius: 4px;
+    display: inline-block;
+    animation: snap 0.35s ease;
+  }
+
+  @keyframes snap {
+    0% { background: var(--amber); color: var(--amber); border-radius: 2px; }
+    60% { background: var(--amber); color: transparent; }
+    100% { background: #1A1500; color: var(--amber); }
+  }
+
+  .footer-note {
+    margin-top: 20px;
+    font-size: 11.5px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .redacted { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="console">
+  <div class="topline"><span class="dot"></span>gateway online</div>
+  <h1>DLP Scan Console</h1>
+  <p class="sub">Drop a text file or image below. It's scanned locally by the gateway for emails, phone numbers, card numbers, and internal asset IDs — anything sensitive gets blacked out before you see the result.</p>
+
+  <div class="dropzone" id="dropzone">
+    <input type="file" id="fileInput" accept=".txt,.png,.jpg,.jpeg" />
+    <div class="dz-icon">[ drop file here ]</div>
+    <div class="dz-main">Click to browse, or drag a file in</div>
+    <div class="dz-sub">.txt, .png, .jpg supported</div>
+    <div id="fileTag"></div>
+  </div>
+
+  <div class="actions">
+    <button class="scan-btn" id="scanBtn" disabled>Run scan</button>
+  </div>
+  <div class="status-line" id="statusLine"></div>
+
+  <div class="result" id="result">
+    <div class="result-header">
+      <div class="result-title">Scan result</div>
+      <div class="badge" id="badge">clean</div>
+    </div>
+    <div class="entity-row" id="entityRow"></div>
+    <div class="text-panel" id="textPanel"></div>
+    <div class="footer-note" id="footerNote"></div>
+  </div>
+</div>
+
+<script>
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const fileTag = document.getElementById('fileTag');
+  const scanBtn = document.getElementById('scanBtn');
+  const statusLine = document.getElementById('statusLine');
+  const result = document.getElementById('result');
+  const badge = document.getElementById('badge');
+  const entityRow = document.getElementById('entityRow');
+  const textPanel = document.getElementById('textPanel');
+  const footerNote = document.getElementById('footerNote');
+
+  let selectedFile = null;
+
+  dropzone.addEventListener('click', () => fileInput.click());
+
+  dropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('drag');
+  });
+
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('drag');
+    if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) setFile(fileInput.files[0]);
+  });
+
+  function setFile(file) {
+    selectedFile = file;
+    fileTag.innerHTML = `<div class="filename-tag">${file.name}</div>`;
+    scanBtn.disabled = false;
+    statusLine.textContent = '';
+    statusLine.className = 'status-line';
+    result.classList.remove('show');
+  }
+
+  scanBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    scanBtn.disabled = true;
+    statusLine.className = 'status-line';
+    statusLine.textContent = 'scanning...';
+    result.classList.remove('show');
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      const res = await fetch('/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (!res.ok) {
+        statusLine.className = 'status-line error';
+        statusLine.textContent = data.error || 'scan failed — check the file and try again';
+        scanBtn.disabled = false;
+        return;
+      }
+
+      statusLine.textContent = 'done';
+      renderResult(data);
+    } catch (err) {
+      statusLine.className = 'status-line error';
+      statusLine.textContent = 'could not reach the gateway — is the server running?';
+    }
+
+    scanBtn.disabled = false;
+  });
+
+  function renderResult(data) {
+    const flagged = data.entities_found > 0;
+    badge.textContent = flagged ? `${data.entities_found} found` : 'clean';
+    badge.className = flagged ? 'badge flagged' : 'badge';
+
+    entityRow.innerHTML = '';
+    (data.entity_types || []).forEach(type => {
+      const chip = document.createElement('div');
+      chip.className = 'entity-chip';
+      chip.textContent = type;
+      entityRow.appendChild(chip);
+    });
+
+    const highlighted = (data.redacted_text || '')
+      .replace(/\[REDACTED-ASSET-ID\]/g, '<span class="redacted">[REDACTED-ASSET-ID]</span>')
+      .replace(/\[REDACTED\]/g, '<span class="redacted">[REDACTED]</span>');
+
+    textPanel.innerHTML = highlighted;
+    footerNote.textContent = `source file: ${data.filename}`;
+    result.classList.add('show');
+  }
+</script>
+
+</body>
+</html>
