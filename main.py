@@ -1,5 +1,5 @@
 # main.py
-# FastAPI gateway - takes a text file upload, runs it through scanner.py,
+# FastAPI gateway - takes a text/image/pdf upload, runs it through scanner.py,
 # hands back the redacted version + some stats.
 
 from typing import Dict, Any
@@ -10,13 +10,16 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from scanner import scanner, ScanError
+from extractors import extract_text_from_image, extract_text_from_pdf, ExtractionError
 
 app = FastAPI(title="DLP Gateway")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+
 @app.get("/")
 async def serve_ui():
     return FileResponse("static/index.html")
+
 
 @app.get("/health")
 async def health():
@@ -43,13 +46,26 @@ async def upload_file(file: UploadFile = File(...)):
             "error": "file is empty",
         })
 
+    filename_lower = name.lower()
+
     try:
-        text = raw.decode("utf-8")
+        if filename_lower.endswith((".png", ".jpg", ".jpeg")):
+            text = extract_text_from_image(raw)
+        elif filename_lower.endswith(".pdf"):
+            text = extract_text_from_pdf(raw)
+        else:
+            text = raw.decode("utf-8")
     except UnicodeDecodeError as e:
         return JSONResponse(status_code=400, content={
             "filename": name,
             "status": "failed",
             "error": f"file isn't valid utf-8, can't scan it: {e}",
+        })
+    except ExtractionError as e:
+        return JSONResponse(status_code=400, content={
+            "filename": name,
+            "status": "failed",
+            "error": str(e),
         })
 
     try:
