@@ -36,7 +36,7 @@ FastAPI, Microsoft Presidio, spaCy, Tesseract OCR, pdfplumber
 
 ## Live demo
 
-[link once deployed]
+https://dlp-gateway-1.onrender.com
 
 ## Known limitations
 
